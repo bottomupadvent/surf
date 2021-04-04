@@ -31,7 +31,7 @@ static Parameter defconfig[ParameterLast] = {
 	[DNSPrefetch]         =       { { .i = 0 },     },
 	[Ephemeral]           =       { { .i = 0 },     },
 	[FileURLsCrossAccess] =       { { .i = 0 },     },
-	[FontSize]            =       { { .i = 12 },    },
+	[FontSize]            =       { { .i = 13 },    },
 	[FrameFlattening]     =       { { .i = 0 },     },
 	[Geolocation]         =       { { .i = 0 },     },
 	[HideBackground]      =       { { .i = 0 },     },
@@ -104,9 +104,14 @@ static WebKitFindOptions findopts = WEBKIT_FIND_OPTIONS_CASE_INSENSITIVE |
 /* VIDEOPLAY(URI) */
 #define VIDEOPLAY(u) {\
         .v = (const char *[]){ "/bin/sh", "-c", \
-             "mpv --really-quiet \"$0\"", u, NULL \
+             "mpv --ytdl-format=best -really-quiet \"$0\"", u, NULL \
         } \
 }
+
+#define SR_SEARCH { .v = (char *[]){ "/bin/sh", "-c", \
+"xprop -id $0 -f _SURF_GO 8s -set _SURF_GO \
+$(sr -p $(sr -elvi | tail -n +2 | cut -s -f1 | dmenu))", \
+winid, NULL } }
 
 /* styles */
 /*
@@ -139,8 +144,8 @@ static Key keys[] = {
 	{ MODKEY,                GDK_KEY_g,      spawn,      SETPROP("_SURF_URI", "_SURF_GO", PROMPT_GO) },
 	{ MODKEY,                GDK_KEY_f,      spawn,      SETPROP("_SURF_FIND", "_SURF_FIND", PROMPT_FIND) },
 	{ MODKEY,                GDK_KEY_slash,  spawn,      SETPROP("_SURF_FIND", "_SURF_FIND", PROMPT_FIND) },
-
-	{ MODKEY,                GDK_KEY_w,      playexternal, { 0 } },
+    { MODKEY,                GDK_KEY_w,      playexternal, { 0 } },
+    { MODKEY,                GDK_KEY_s,      spawn,      SR_SEARCH },
 
 	{ 0,                     GDK_KEY_Escape, stop,       { 0 } },
 	{ MODKEY,                GDK_KEY_c,      stop,       { 0 } },
