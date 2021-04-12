@@ -82,6 +82,16 @@ static WebKitFindOptions findopts = WEBKIT_FIND_OPTIONS_CASE_INSENSITIVE |
         } \
 }
 
+#define SELNAV { \
+	.v = (char *[]){ "/bin/sh", "-c", \
+		"prop=\"`xprop -id $0 _SURF_HIST" \
+		" | sed -e 's/^.[^\"]*\"//' -e 's/\"$//' -e 's/\\\\\\n/\\n/g'" \
+		" | dmenu -i -l 10`\"" \
+		" && xprop -id $0 -f _SURF_NAV 8s -set _SURF_NAV \"$prop\"", \
+		winid, NULL \
+	} \
+}
+
 /* DOWNLOAD(URI, referer) */
 #define DOWNLOAD(u, r) { \
         .v = (const char *[]){ "st", "-e", "/bin/sh", "-c",\
@@ -139,6 +149,8 @@ static Key keys[] = {
 	{ MODKEY,                GDK_KEY_g,      spawn,      SETPROP("_SURF_URI", "_SURF_GO", PROMPT_GO) },
 	{ MODKEY,                GDK_KEY_f,      spawn,      SETPROP("_SURF_FIND", "_SURF_FIND", PROMPT_FIND) },
 	{ MODKEY,                GDK_KEY_slash,  spawn,      SETPROP("_SURF_FIND", "_SURF_FIND", PROMPT_FIND) },
+
+    { MODKEY|GDK_SHIFT_MASK,GDK_h,      selhist,    SELNAV },
 
 	{ MODKEY,                GDK_KEY_w,      playexternal, { 0 } },
 

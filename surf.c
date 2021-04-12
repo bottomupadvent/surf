@@ -37,7 +37,7 @@
 #define LENGTH(x)               (sizeof(x) / sizeof(x[0]))
 #define CLEANMASK(mask)         (mask & (MODKEY|GDK_SHIFT_MASK))
 
-enum { AtomFind, AtomGo, AtomUri, AtomLast };
+enum { AtomFind, AtomGo, AtomUri, AtomHist, AtomNav, AtomLast };
 
 enum {
 	OnDoc   = WEBKIT_HIT_TEST_RESULT_CONTEXT_DOCUMENT,
@@ -156,6 +156,10 @@ static const char *getuserhomedir(const char *user);
 static const char *getcurrentuserhomedir(void);
 static Client *newclient(Client *c);
 static void loaduri(Client *c, const Arg *a);
+
+static void selhist(Client *c, const Arg *arg);
+static void navhist(Client *c, const Arg *arg);
+
 static const char *geturi(Client *c);
 static void setatom(Client *c, int a, const char *v);
 static const char *getatom(Client *c, int a);
@@ -346,6 +350,8 @@ setup(void)
 	atoms[AtomFind] = XInternAtom(dpy, "_SURF_FIND", False);
 	atoms[AtomGo] = XInternAtom(dpy, "_SURF_GO", False);
 	atoms[AtomUri] = XInternAtom(dpy, "_SURF_URI", False);
+	atoms[AtomHist] = XInternAtom(dpy, "_SURF_HIST", False);
+	atoms[AtomNav] = XInternAtom(dpy, "_SURF_NAV", False);
 
 	gtk_init(NULL, NULL);
 
@@ -1355,6 +1361,9 @@ processx(GdkXEvent *e, GdkEvent *event, gpointer d)
 				loaduri(c, &a);
 
 				return GDK_FILTER_REMOVE;
+			} else if(ev->atom == atoms[AtomNav]) {
+				a.v = getatom(c, AtomNav);
+				navhist(c, &a);
 			}
 		}
 	}
@@ -1443,6 +1452,7 @@ showview(WebKitWebView *v, Client *c)
 
 	setatom(c, AtomFind, "");
 	setatom(c, AtomUri, "about:blank");
+    setatom(c, AtomHist, "");
 }
 
 GtkWidget *
@@ -1923,6 +1933,76 @@ navigate(Client *c, const Arg *a)
 	else if (a->i > 0)
 		webkit_web_view_go_forward(c->view);
 }
+
+static void
+selhist(Client *c, const Arg *arg) {
+	WebKitBackForwardList *blst;
+	WebKitBackForwardList *flst;
+	WebKitBackForwardListItem *cur;
+
+	gint i;
+	gchar *out;
+	gchar *tmp;
+	gchar *line;
+
+	out = g_strdup("");
+
+	/* if(!(lst = webkit_web_view_get_back_forward_list(c->view))) */
+
+    if(!(blst = webkit_back_forward_list_get_back_list(c->view)))
+		return;
+	if(!(flst = webkit_back_forward_list_get_forward_list(c->view)))
+		return;
+
+	/* for(i = webkit_web_back_forward_list_get_back_length(lst); i > 0; i--) { */
+	/* 	if(!(cur = webkit_web_back_forward_list_get_nth_item(lst, -i))) */
+
+    for(i = webkit_back_forward_list_get_length(blst); i > 0; i--) {
+		if(!(cur = webkit_back_forward_list_get_nth_item(blst, -i)))
+			break;
+		line = g_strdup_printf("%d: %s\n", -i,
+                               webkit_back_forward_list_item_get_original_uri(cur));
+		tmp = g_strconcat(out, line, NULL);
+		g_free(out);
+		out = tmp;
+	}
+
+	/* if((cur = webkit_web_back_forward_list_get_nth_item(lst, 0))) { */
+    if((cur = webkit_back_forward_list_get_current_item(blst)) \
+		|| (cur = webkit_back_forward_list_get_current_item(flst))) {
+
+		line = g_strdup_printf("%d: %s", 0,
+                               webkit_back_forward_list_item_get_original_uri(cur));
+
+		tmp = g_strconcat(out, line, NULL);
+		g_free(out);
+		out = tmp;
+	}
+
+	/* for(i = 1; i <= webkit_web_back_forward_list_get_forward_length(lst); i++) { */
+	/* 	if(!(cur = webkit_web_back_forward_list_get_nth_item(lst, i))) */
+
+    for(i = 1; i <= webkit_back_forward_list_get_length(flst); i++) {
+		if(!(cur = webkit_back_forward_list_get_nth_item(flst, i)))
+			break;
+		line = g_strdup_printf("\n%d: %s", i,
+                               webkit_back_forward_list_item_get_original_uri(cur));
+		tmp = g_strconcat(out, line, NULL);
+		g_free(out);
+		out = tmp;
+	}
+
+	setatom(c, AtomHist, out);
+	g_free(out);
+	spawn(c, arg);
+}
+
+static void
+navhist(Client *c, const Arg *arg) {
+	Arg a = { .i = atoi(arg->v) };
+	navigate(c, &a);
+}
+
 
 void
 stop(Client *c, const Arg *a)

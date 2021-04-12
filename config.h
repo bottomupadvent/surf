@@ -31,7 +31,7 @@ static Parameter defconfig[ParameterLast] = {
 	[DNSPrefetch]         =       { { .i = 0 },     },
 	[Ephemeral]           =       { { .i = 0 },     },
 	[FileURLsCrossAccess] =       { { .i = 0 },     },
-	[FontSize]            =       { { .i = 13 },    },
+	[FontSize]            =       { { .i = 12 },    },
 	[FrameFlattening]     =       { { .i = 0 },     },
 	[Geolocation]         =       { { .i = 0 },     },
 	[HideBackground]      =       { { .i = 0 },     },
@@ -113,6 +113,17 @@ static WebKitFindOptions findopts = WEBKIT_FIND_OPTIONS_CASE_INSENSITIVE |
 $(sr -p $(sr -elvi | tail -n +2 | cut -s -f1 | dmenu))", \
 winid, NULL } }
 
+#define SELNAV { \
+	.v = (char *[]){ "/bin/sh", "-c", \
+		"prop=\"`xprop -id $0 _SURF_HIST" \
+		" | sed -e 's/^.[^\"]*\"//' -e 's/\"$//' -e 's/\\\\\\n/\\n/g'" \
+		" | dmenu -i -l 10`\"" \
+		" && xprop -id $0 -f _SURF_NAV 8s -set _SURF_NAV \"$prop\"", \
+		winid, NULL \
+	} \
+}
+
+
 /* styles */
 /*
  * The iteration will stop at the first match, beginning at the beginning of
@@ -120,7 +131,10 @@ winid, NULL } }
  */
 static SiteSpecific styles[] = {
 	/* regexp               file in $styledir */
-	{ ".*",                 "default.css" },
+    { ".*.archlinux.org.*",     "archwiki.css" },
+    { ".*.devdocs.io.*",        "devdocs.css" },
+    { ".*.whatsapp.com.*",      "whatsappWeb.css" },
+	{ ".*",                     "default.css" },
 };
 
 /* certificates */
@@ -144,6 +158,9 @@ static Key keys[] = {
 	{ MODKEY,                GDK_KEY_g,      spawn,      SETPROP("_SURF_URI", "_SURF_GO", PROMPT_GO) },
 	{ MODKEY,                GDK_KEY_f,      spawn,      SETPROP("_SURF_FIND", "_SURF_FIND", PROMPT_FIND) },
 	{ MODKEY,                GDK_KEY_slash,  spawn,      SETPROP("_SURF_FIND", "_SURF_FIND", PROMPT_FIND) },
+
+    { MODKEY|GDK_SHIFT_MASK, GDK_KEY_h,      selhist,    SELNAV },
+
     { MODKEY,                GDK_KEY_w,      playexternal, { 0 } },
     { MODKEY,                GDK_KEY_s,      spawn,      SR_SEARCH },
 
